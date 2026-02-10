@@ -1,20 +1,14 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { RagService } from './rag.service';
 
 @Controller('rag')
 export class RagController {
   constructor(private readonly ragService: RagService) {}
 
-  @Get('query')
-  async query(@Query('q') question: string) {
-    const docs = [
-      {
-        pageContent: 'LangChain is a framework for building LLM applications.',
-      },
-      { pageContent: 'Ollama allows you to run LLMs locally.' },
-    ];
-
-    const answer = await this.ragService.answerFromDocs(question, docs);
-    return { question, answer };
+  @Post('ask')
+  async ask(@Body('question') question: string) {
+    const result = await this.ragService.ask(question);
+    console.log('Controller sending:', result);
+    return result;
   }
 }

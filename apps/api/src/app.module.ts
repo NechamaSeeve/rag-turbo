@@ -9,6 +9,7 @@ import * as winston from 'winston';
 import { WinstonModule } from 'nest-winston';
 import { ConfigModule } from '@nestjs/config';
 import { RagModule } from './rag/rag.module';
+import { IngestModule } from './ingest/ingest.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { RagModule } from './rag/rag.module';
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     RagModule,
+    IngestModule,
   ],
   controllers: [AppController],
   providers: [AppService],

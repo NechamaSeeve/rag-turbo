@@ -9,6 +9,13 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ai-sdk/react": "^1.1.13",
+    "@tanstack/ai": "^0.4.2",
+    "@tanstack/ai-openai": "^0.4.0",
+    "@tanstack/ai-react": "^0.5.2",
+    "@tanstack/react-query": "^5.90.20",
+    "ai": "^4.1.20",
+    "lucide-react": "^0.563.0",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3"

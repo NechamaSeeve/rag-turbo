@@ -1,43 +1,52 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { Injectable } from '@nestjs/common';
-import { Ollama } from 'ollama';
-import { z } from 'zod';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-
-interface Document {
-  pageContent: string;
-  metadata?: Record<string, any>;
-}
+import { Ollama } from '@langchain/ollama';
+import { IngestService } from 'src/ingest/ingest.service';
+import { LLMFactory } from 'src/factories/llmFactory';
 
 @Injectable()
 export class RagService {
-  private client: Ollama;
-  private model: string;
+  private model: Ollama;
+  private logger = new Logger();
 
-  constructor(private readonly configService: ConfigService) {
-    this.client = new Ollama();
-    this.model = this.configService.get<string>('OLLAMA_MODEL') || '';
+  constructor(
+    private ingestService: IngestService,
+    private configService: ConfigService,
+    private llmFactory: LLMFactory,
+  ) {
+    // const modelName =
+    //   this.configService.get<string>('OLLAMA_MODEL') || '';
+
+    // this.model = new Ollama({
+    //   model: 'llama3.2:3b',
+    //   baseUrl: 'http://127.0.0.1:11434',
+    // });
+    this.model = this.llmFactory.getLLM('ollama');
   }
 
-  async answerFromDocs(query: string, docs: Document[]): Promise<string> {
-    z.string().min(1).parse(query);
-    z.array(
-      z.object({
-        pageContent: z.string(),
-        metadata: z.record(z.string(), z.any()).optional(),
-      }),
-    ).parse(docs);
+  async ask(question: string) {
+    const vectorStore = this.ingestService.getVectorStore();
+    const result = await vectorStore.similaritySearch(question, 3);
+    console.log('Chroma found chunks:', result.length);
+    this.logger.log('Chroma is working!');
 
-    const combinedDocs = docs.map((d) => d.pageContent).join('\n');
+    if (result.length === 0) return { answer: 'I do not know' };
 
-    const result = await this.client.generate({
-      model: this.model,
-      prompt: `Question: ${query}\nContext: ${combinedDocs}`,
-    });
+    const context = result.map((r) => r.pageContent).join('\n');
 
-    return result.response;
+    const prompt = `You are a helpful assistant. Use the following pieces of retrieved context to answer the question if the answer is not found in the context say "i don't know" That is it!. 
+    
+Context:
+${context}
+
+Question: ${question}
+Answer:`;
+
+    const response = await this.model.invoke(prompt);
+    this.logger.log(`response: ${response}`);
+    const finalAnswer =
+      typeof response === 'string' ? response : String(response);
+
+    return { answer: finalAnswer };
   }
 }
